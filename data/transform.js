@@ -42,7 +42,7 @@ Promise.all(tables).then(function(tables) {
   data.term_data  = tables[2];
   data.hierarchy  = tables[3];
 
-  fs.writeFile('scripts/bluedot.json', JSON.stringify(data), function(err) {
+  fs.writeFile('data/bluedot.json', JSON.stringify(data), function(err) {
     if(err) { 
       console.log(err); 
     } else {
