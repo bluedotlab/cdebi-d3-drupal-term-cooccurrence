@@ -1,6 +1,7 @@
 var mysql   = require('mysql');
 var Promise = require("bluebird");
 var config  = require('../config/config.js');
+var fs      = require("fs");
 
 var connection = mysql.createConnection({
   host     : config.host,
@@ -34,15 +35,26 @@ for (var i = 0; i < queries.length; i++) {
 
 Promise.all(tables).then(function(tables) {
 
-  var index      = tables[0];
-  var vocab      = tables[1];
-  var term_data  = tables[2];
-  var hierarchy  = tables[3];
+  var data = {};
 
-  console.log("INDEX: ", index[0]);
-  console.log("VOCAB: ", vocab[0]);
-  console.log("TERM_DATA: ", term_data[0]);
-  console.log("HIERARCHY: ", hierarchy[0]);
+  data.index      = tables[0];
+  data.vocab      = tables[1];
+  data.term_data  = tables[2];
+  data.hierarchy  = tables[3];
+
+  fs.writeFile('scripts/bluedot.json', JSON.stringify(data), function(err) {
+    if(err) { 
+      console.log(err); 
+    } else {
+      console.log("saved");
+    }
+  });
+
+
+  console.log("INDEX: ", data.index[0]);
+  console.log("VOCAB: ", data.vocab[0]);
+  console.log("TERM_DATA: ", data.term_data[0]);
+  console.log("HIERARCHY: ", data.hierarchy[0]);
 
 }, function (err) {
   console.log("ERROR: ", err);
