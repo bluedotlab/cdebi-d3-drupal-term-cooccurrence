@@ -5,7 +5,8 @@ var config  = require('../config/config.js');
 var connection = mysql.createConnection({
   host     : config.host,
   user     : config.user,
-  password : config.pswd
+  password : config.pswd,
+  database : config.dbnm
 });
 
 connection.connect();
@@ -20,10 +21,10 @@ var retrieve = function (query) {
 }
 
 var queries = [
-  'SELECT * FROM bluedot.taxonomy_index',
-  'SELECT * FROM bluedot.taxonomy_vocabulary',
-  'SELECT * FROM bluedot.taxonomy_term_data',
-  'SELECT * FROM bluedot.taxonomy_term_hierarchy'
+  'SELECT * FROM taxonomy_index',
+  'SELECT * FROM taxonomy_vocabulary',
+  'SELECT * FROM taxonomy_term_data',
+  'SELECT * FROM taxonomy_term_hierarchy'
 ];
 
 var tables = [];
