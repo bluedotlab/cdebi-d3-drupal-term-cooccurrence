@@ -16,6 +16,8 @@
 
         var link = function ($scope, $el, $attr) {
 
+          $scope.graph = graph.create();
+
           var svg = d3.select($el[0]).append("svg")
             .attr("width", window.innerWidth)
             .attr("height", window.innerHeight)

@@ -34,6 +34,8 @@
 
           d3.json('../data/bluedot.json', function (err, data) {
 
+            $scope.graph = graph.create();
+
             data.index.forEach(function (row) {
               var node = $scope.find(data.nodes, 'nid', row.nid)
               var term = $scope.find(data.terms, 'tid', row.tid)
@@ -83,9 +85,9 @@
                 var type1 = d.source.type;
                 var type2 = d.target.type;
                 if (type2 === 'term' | type1 === 'term') {
-                  return "orange";
-                } else {
                   return "white";
+                } else {
+                  return "orange";
                 }
               })
               .attr("class", "link")

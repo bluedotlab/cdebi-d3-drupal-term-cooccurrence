@@ -1,6 +1,6 @@
 angular.module('app', []);
 
-angular.module('app').controller('mainCtrl', ['graph', '$scope', function (graph, $scope) {
+angular.module('app').controller('mainCtrl', ['$scope', function ($scope) {
 
   $scope.find = function (coll, prop, val) {
     var result = [];
