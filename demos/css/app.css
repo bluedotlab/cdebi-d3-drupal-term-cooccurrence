@@ -1,0 +1,16 @@
+body {
+  background-color: black;
+}
+
+.link {
+  pointer-events: none;
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-opacity: .5;
+}
+
+text {
+  pointer-events: none;
+  fill: white;
+  font-size: 14px;
+}

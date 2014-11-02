@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+  </head>
+  <body ng-app="app" ng-controller="mainCtrl">
+    <graph-view></graph-view>
+    <script src="../bower_components/d3/d3.js"></script>
+    <script src="../bower_components/angular/angular.js"></script>
+    <script src="app.js"></script>
+    <script type="text/javascript">
+      angular.module('app').directive('graphView', ['graph', function (graph) {
+
+        var link = function ($scope, $el, $attr) {
+
+          var svg = d3.select($el[0]).append("svg")
+            .attr("width", window.innerWidth)
+            .attr("height", window.innerHeight)
+            .append("g");
+
+          var force = d3.layout.force()
+
+          force
+            .gravity(0.2)
+            .charge(-200)
+            .theta(0.9)
+            .friction(0.9)
+            .linkDistance(2)
+            .linkStrength(0.9)
+            .size([window.innerWidth, window.innerHeight]);
+
+          d3.json('../data/bluedot.json', function (err, data) {
+
+            data.index.forEach(function (row) {
+              var node = $scope.find(data.nodes, 'nid', row.nid)
+              var term = $scope.find(data.terms, 'tid', row.tid)
+              var temp;
+
+              if (node.type === "dataset") {
+                // Find the record in datasets table
+                temp = $scope.find(data.node_data, 'field_datasets_target_id', row.nid);
+                // Get the record for the related node
+                temp = $scope.find(data.nodes, 'nid', temp.entity_id);
+                // Add dataset node
+                // $scope.graph.addNode({id: 'd' + row.nid, type: 'data'});
+                // Add the realted node (if not already created)
+                $scope.graph.addNode({id: 'n' + temp.nid, type: 'node'});
+                // Link the dataset and node
+                // $scope.graph.addLink('d' + row.nid, 'n' + temp.nid);
+                // Add the term
+                $scope.graph.addNode({id: 't' + term.tid, type: 'term', name: term.name});
+                // Link the term and node
+                $scope.graph.addLink('t' + row.tid, 'n' + temp.nid);
+              } else {
+                // Add the node
+                $scope.graph.addNode({id: 'n' + row.nid, type: 'node'});
+                // Add the term
+                $scope.graph.addNode({id: 't' + term.tid, type: 'term', name: term.name});
+                // Link the term and node
+                $scope.graph.addLink('t' + row.tid, 'n' + row.nid);
+              }
+              update();
+            })
+          });
+
+          function update(){
+            var nodes = $scope.graph.getNodes();
+            var links = $scope.graph.getLinks();
+
+            force
+              .nodes(nodes)
+              .links(links)
+              .start();
+
+            var link = svg.selectAll(".link")
+              .data(links, function (d) { return d.id; });
+              
+            link.enter().append("line")
+              .style("stroke", function (d) {
+                var type1 = d.source.type;
+                var type2 = d.target.type;
+                if (type2 === 'term' | type1 === 'term') {
+                  return "orange";
+                } else {
+                  return "white";
+                }
+              })
+              .attr("class", "link")
+              .style("stroke-width", "2px");
+
+            link.exit().style("stroke", "yellow")
+              .transition().duration(800)
+              .style("opacity", 0)
+              .remove();
+
+            var node = svg.selectAll(".node")
+              .data(nodes, function (d) { return d.id; });
+
+            node.enter()
+              .append("g")
+              .attr("class", "node")
+              .each(function (d) {
+
+                d3.select(this).append("circle")
+                  .attr("r", 10)
+                  .style("fill", function (d) {
+                    if (d.type === 'data') {
+                      return 'blue';
+                    } else if (d.type === 'node') {
+                      return 'red';
+                    } else {
+                      return 'green';
+                    }
+                  });
+
+                d3.select(this).append("text")
+                  .attr("text-anchor", "middle")
+                  .text(d.name || d.id)
+              })
+              .on('dblclick', function (d) {
+                $scope.graph.removeNode(d.id);
+                update();
+              })
+              .call(force.drag);
+
+            node.exit().select("circle").transition().duration(1000)
+              .attr("fill", "white")
+              .attr("cx", 1000)
+              .attr("cy", 1000)
+              .remove();
+
+            node.exit().select("text").remove();
+
+            force.on('tick', function () {
+              link
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+              node
+                .attr("transform", function (d) {
+                  return "translate(" + d.x + "," + d.y + ")";
+                })
+            });
+          };
+          console.log("graph: ", $scope.graph);
+        }
+
+        return {link: link}
+      }]);
+    </script>
+  </body>
+</html>

@@ -2,9 +2,7 @@ angular.module('app', []);
 
 angular.module('app').controller('mainCtrl', ['graph', '$scope', function (graph, $scope) {
 
-  window.graph = $scope.graph = graph.create();
-
-  function find(coll, prop, val) {
+  $scope.find = function (coll, prop, val) {
     var result = [];
 
     for (var i = 0; i < coll.length; i++) {
@@ -15,47 +13,6 @@ angular.module('app').controller('mainCtrl', ['graph', '$scope', function (graph
     return result[0];
   }
 
-  d3.json('../data/bluedot.json', function (err, data) {
-
-    data.index.forEach(function (row) {
-      var node = find(data.nodes, 'nid', row.nid);
-      var temp;
-
-      if (node.type === "dataset") {
-        // Find the record in datasets table
-        temp = find(data.node_data, 'field_datasets_target_id', row.nid);
-        // Get the record for the related node
-        temp = find(data.nodes, 'nid', temp.entity_id);
-
-        // Add dataset node
-        $scope.graph.addNode({id: 'n' + row.nid, type: 'data'});
-        // Add the realted node (if not already created)
-        $scope.graph.addNode({id: 'n' + temp.nid, type: 'node'});
-        // Link the dataset and node
-        $scope.graph.addLink('n' + row.nid, 'n' + temp.nid);
-        // Add the term
-        $scope.graph.addNode({id: 't' + row.tid, type: 'term'});
-        // Link the term and dataset
-        $scope.graph.addLink('t' + row.tid, 'n' + row.nid);
-      } else {
-        // Add the node
-        $scope.graph.addNode({id: 'n' + row.nid, type: 'node'});
-        // Add the term
-        $scope.graph.addNode({id: 't' + row.tid, type: 'term'});
-        // Link the term and node
-        $scope.graph.addLink('t' + row.tid, 'n' + row.nid);
-      }
-    })
-  });
-}]);
-
-angular.module('app').directive('graphView', ['graph', function (graph) {
-
-  var link = function ($scope) {
-    console.log("graph: ", $scope.graph);
-  }
-
-  return {link: link}
 }]);
 
 angular.module('app').service('graph', function () {
