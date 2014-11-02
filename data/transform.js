@@ -50,7 +50,6 @@ Promise.all(tables).then(function(tables) {
     }
   });
 
-
   console.log("INDEX: ", data.index[0]);
   console.log("VOCAB: ", data.vocab[0]);
   console.log("TERM_DATA: ", data.term_data[0]);
