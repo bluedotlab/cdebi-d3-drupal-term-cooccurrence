@@ -2,6 +2,25 @@ angular.module('app', []);
 
 angular.module('app').controller('mainCtrl', ['$scope', function ($scope) {
 
+  $scope.intersection = function(array) {
+    if (array == null) return [];
+    var result = [];
+    var argsLength = arguments.length;
+    for (var i = 0, length = array.length; i < length; i++) {
+      var item = array[i];
+      if (contains(result, item)) continue;
+      for (var j = 1; j < argsLength; j++) {
+        if (!contains(arguments[j], item)) break;
+      }
+      if (j === argsLength) result.push(item);
+    }
+    return result;
+  };
+
+  function contains(array, target) {
+    return array.indexOf(target) >= 0;
+  };
+
   $scope.find = function (coll, prop, val) {
     var result = [];
 
