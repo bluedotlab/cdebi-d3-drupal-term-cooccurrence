@@ -16,6 +16,9 @@
 
         var link = function ($scope, $el, $attr) {
 
+          var colors = d3.scale.ordinal()
+            .range(['#81302C','#599DB4','#FCAF5F']);
+
           var svg = d3.select($el[0]).append("svg")
             .attr("width", window.innerWidth)
             .attr("height", window.innerHeight)
@@ -24,50 +27,62 @@
           var force = d3.layout.force()
 
           force
-            .gravity(0.4)
+            .gravity(0.9)
             .charge(-200)
             .theta(0.9)
             .friction(0.9)
-            .linkDistance(2)
-            .linkStrength(0.5)
+            .linkDistance(0.5)
+            .linkStrength(0.9)
             .size([window.innerWidth, window.innerHeight]);
 
           d3.json('../data/bluedot.json', function (err, data) {
 
             $scope.graph = graph.create();
-
+            console.log(data);
             var sample = d3.shuffle(data.index)
-            sample = sample.slice(0, 100);
+            sample = sample.slice(0, 400);
+
+            var terms = {};
 
             sample.forEach(function (row) {
               var node = $scope.find(data.nodes, 'nid', row.nid)
               var term = $scope.find(data.terms, 'tid', row.tid)
-              var temp;
 
-              if (node.type === "dataset") {
-                // Find the record in datasets table
-                temp = $scope.find(data.node_data, 'field_datasets_target_id', row.nid);
-                // Get the record for the related node
-                temp = $scope.find(data.nodes, 'nid', temp.entity_id);
-                // Add dataset node
-                $scope.graph.addNode({id: 'd' + row.nid, type: 'data'});
-                // Add the realted node (if not already created)
-                $scope.graph.addNode({id: 'n' + temp.nid, type: 'node'});
-                // Link the dataset and node
-                $scope.graph.addLink('d' + row.nid, 'n' + temp.nid);
-                // Add the term
-                $scope.graph.addNode({id: 't' + term.tid, type: 'term', name: term.name});
-                // Link the term and dataset
-                $scope.graph.addLink('t' + row.tid, 'd' + row.nid);
-              } else {
-                // Add the node
-                $scope.graph.addNode({id: 'n' + row.nid, type: 'node'});
-                // Add the term
-                $scope.graph.addNode({id: 't' + term.tid, type: 'term', name: term.name});
-                // Link the term and node
-                $scope.graph.addLink('t' + row.tid, 'n' + row.nid);
+              if ([4,16,24].indexOf(term.vid) >= 0) {
+                if (node.type === "dataset") {
+                  node = $scope.find(data.node_data, 'field_datasets_target_id', row.nid);
+                  node = $scope.find(data.nodes, 'nid', node.entity_id);
+                }
+
+                if (terms[term.tid]) {
+                  $scope.add(terms[term.tid].list, node.nid);
+                } else {
+                  terms[term.tid] = {
+                    id: 't' + term.tid,
+                    vid: 'v' + term.vid,
+                    name: term.name,
+                    list: [node.nid]
+                  };
+                }
               }
-            })
+            });
+
+            var keys = Object.keys(terms);
+            var list = [], t1, t2, link
+
+            for (var i = 0; i < keys.length; i++) {
+              t1 = terms[keys[i]];
+              $scope.graph.addNode({id: t1.id, type: 'term', name: t1.name, vid: t1.vid});
+              for (var j = 0; j < keys.length; j++) {
+                t2 = terms[keys[j]];
+                $scope.graph.addNode({id: t2.id, type: 'term', name: t2.name, vid: t2.vid});
+                list = $scope.intersect(t1.list, t2.list);
+                if (list.length > 0 && t1.id !== t2.id) {
+                  link = $scope.graph.addLink(t1.id, t2.id);
+                  link.list = list;
+                }
+              }
+            }
             update();
           });
 
@@ -89,7 +104,7 @@
               var n = [link.source, i, link.target];
               nodes.push(i);
               links.push(s,t);
-              bilinks.push({id: getId(), nodes: n});
+              bilinks.push({id: getId(), nodes: n, list: link.list});
             });
 
             console.log("nodes", nodes, "links", bilinks);
@@ -99,14 +114,24 @@
               .links(links)
               .start();
 
-            var link = svg.selectAll(".link")
+            var linkScale = d3.scale.linear()
+              .range([1.5, 10])
+              .domain([1, d3.max(bilinks, function (d) {
+               return d.list.length
+              })]);
+
+            console.log(linkScale.domain());
+
+            var link = svg.selectAll(".bilink")
               .data(bilinks, function (d) { return d.id; });
               
             link.enter().append("path")
-              .attr("class", "link")
-              .style("fill", "none")
-              .style("stroke", "white")
-              .style("stroke-width", "2px");
+              .attr("class", "bilink")
+              .attr("fill", "none")
+              .attr("stroke", "#DACD87")
+              .attr("stroke-width", function (d) {
+                return linkScale(d.list.length) + "px";
+              });
 
             link.exit().style("stroke", "yellow")
               .transition().duration(800)
@@ -124,18 +149,23 @@
                 d3.select(this).append("circle")
                   .attr("r", 10)
                   .style("fill", function (d) {
-                    if (d.type === 'data') {
-                      return 'blue';
-                    } else if (d.type === 'node') {
-                      return 'red';
-                    } else {
-                      return 'green';
-                    }
+                    return colors(d.vid)
                   });
 
                 d3.select(this).append("text")
                   .attr("text-anchor", "middle")
                   .text(d.name || d.id)
+              })
+              .on("mouseover", function (d) {
+                link.attr("class", function (link) {
+                  var source = link.nodes[0].id;
+                  var target = link.nodes[2].id;
+                  if (source === d.id || target === d.id) {
+                    return "bilink active";
+                  } else {
+                    return "bilink";
+                  }
+                });
               })
               .call(force.drag);
 
@@ -162,9 +192,7 @@
                 })
             });
           };
-          console.log("graph: ", $scope.graph);
         }
-
         return {link: link}
       }]);
     </script>

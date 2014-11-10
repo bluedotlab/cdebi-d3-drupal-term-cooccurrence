@@ -1,5 +1,5 @@
 body {
-  background-color: black;
+  background-color: #333;
 }
 
 .link {
@@ -9,8 +9,18 @@ body {
   stroke-opacity: .5;
 }
 
+.bilink {
+  pointer-events: none;
+  stroke-opacity: .2;
+}
+
+.bilink.active {
+  pointer-events: none;
+  stroke-opacity: 1;
+}
+
 text {
   pointer-events: none;
-  fill: white;
+  fill: rgba(255,255,255, 1);
   font-size: 14px;
 }

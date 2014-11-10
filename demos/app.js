@@ -2,7 +2,7 @@ angular.module('app', []);
 
 angular.module('app').controller('mainCtrl', ['$scope', function ($scope) {
 
-  $scope.intersection = function(array) {
+  $scope.intersect = function(array) {
     if (array == null) return [];
     var result = [];
     var argsLength = arguments.length;
@@ -19,6 +19,12 @@ angular.module('app').controller('mainCtrl', ['$scope', function ($scope) {
 
   function contains(array, target) {
     return array.indexOf(target) >= 0;
+  };
+
+  $scope.add = function (coll, val) {
+    if (coll.indexOf(val) === -1) {
+      coll.push(val);
+    }
   };
 
   $scope.find = function (coll, prop, val) {
@@ -95,6 +101,7 @@ angular.module('app').service('graph', function () {
       node2 = this.nodes[begID < endID ? endID: begID];
       lid = node1.id + '_' + node2.id;
       this.links[lid] = new Link({id: lid, source: node1, target: node2});
+      return this.links[lid];
     } else {
       throw "Both nodes must exist in the graph";
     }
