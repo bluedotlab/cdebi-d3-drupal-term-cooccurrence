@@ -48,7 +48,7 @@
               var node = $scope.find(data.nodes, 'nid', row.nid)
               var term = $scope.find(data.terms, 'tid', row.tid)
 
-              if ([4,16,24].indexOf(term.vid) >= 0) {
+              if ([16,24].indexOf(term.vid) >= 0) {
                 if (node.type === "dataset") {
                   node = $scope.find(data.node_data, 'field_datasets_target_id', row.nid);
                   node = $scope.find(data.nodes, 'nid', node.entity_id);
