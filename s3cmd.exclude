@@ -4,3 +4,6 @@ node_modules/*
 npm-debug.log 
 bower.json
 package.json
+LICENSE
+README.md
+s3cmd.exclude
