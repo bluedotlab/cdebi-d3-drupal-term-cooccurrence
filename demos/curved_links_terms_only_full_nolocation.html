@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+  </head>
+  <body ng-app="app" ng-controller="mainCtrl">
+    <graph-view></graph-view>
+    <script src="../bower_components/d3/d3.js"></script>
+    <script src="../bower_components/angular/angular.js"></script>
+    <script src="app.js"></script>
+    <script type="text/javascript">
+      angular.module('app').directive('graphView', ['graph', function (graph) {
+
+        var link = function ($scope, $el, $attr) {
+
+          var colors = d3.scale.ordinal()
+            .range(['#81302C','#599DB4','#FCAF5F']);
+
+          var svg = d3.select($el[0]).append("svg")
+            .attr("width", window.innerWidth)
+            .attr("height", window.innerHeight)
+            .append("g");
+
+          var force = d3.layout.force()
+
+          force
+            .gravity(0.9)
+            .charge(-30)
+            .theta(0.9)
+            .friction(0.9)
+            .linkDistance(0.5)
+            .linkStrength(0.9)
+            .size([window.innerWidth, window.innerHeight]);
+
+          d3.json('../data/bluedot.json', function (err, data) {
+
+            $scope.graph = graph.create();
+            console.log(data);
+            var sample = d3.shuffle(data.index)
+            sample = sample.slice(0);
+
+            var terms = {};
+
+            sample.forEach(function (row) {
+              var node = $scope.find(data.nodes, 'nid', row.nid)
+              var term = $scope.find(data.terms, 'tid', row.tid)
+
+              if ([4,16,24].indexOf(term.vid) >= 0) {
+                if (node.type === "dataset") {
+                  node = $scope.find(data.node_data, 'field_datasets_target_id', row.nid);
+                  node = $scope.find(data.nodes, 'nid', node.entity_id);
+                }
+
+                if (terms[term.tid]) {
+                  $scope.add(terms[term.tid].list, node.nid);
+                } else {
+                  terms[term.tid] = {
+                    id: 't' + term.tid,
+                    vid: 'v' + term.vid,
+                    name: term.name,
+                    list: [node.nid]
+                  };
+                }
+              }
+            });
+
+            var keys = Object.keys(terms);
+            var list = [], t1, t2, link
+
+            for (var i = 0; i < keys.length; i++) {
+              t1 = terms[keys[i]];
+              $scope.graph.addNode({id: t1.id, type: 'term', name: t1.name, vid: t1.vid});
+              for (var j = 0; j < keys.length; j++) {
+                t2 = terms[keys[j]];
+                $scope.graph.addNode({id: t2.id, type: 'term', name: t2.name, vid: t2.vid});
+                list = $scope.intersect(t1.list, t2.list);
+                if (list.length > 0 && t1.id !== t2.id) {
+                  link = $scope.graph.addLink(t1.id, t2.id);
+                  link.list = list;
+                }
+              }
+            }
+            update();
+          });
+
+          function update(){
+
+            var nodes = $scope.graph.getNodes();
+            var links = [];
+            var bilinks = [];
+
+            var id = 0;
+            var getId = function () {
+              return id++;
+            }
+
+            $scope.graph.getLinks().forEach(function (link) {
+              var i = {};
+              var s = {source: link.source, target: i};
+              var t = {source: i, target: link.target};
+              var n = [link.source, i, link.target];
+              nodes.push(i);
+              links.push(s,t);
+              bilinks.push({id: getId(), nodes: n, list: link.list});
+            });
+
+            console.log("nodes", nodes, "links", bilinks);
+
+            force
+              .nodes(nodes)
+              .links(links)
+              .start();
+
+            var linkScale = d3.scale.linear()
+              .range([1.5, 10])
+              .domain([1, d3.max(bilinks, function (d) {
+               return d.list.length
+              })]);
+
+            console.log(linkScale.domain());
+
+            var link = svg.selectAll(".bilink")
+              .data(bilinks, function (d) { return d.id; });
+              
+            link.enter().append("path")
+              .attr("class", "bilink")
+              .attr("fill", "none")
+              .attr("stroke", "#DACD87")
+              .attr("stroke-width", function (d) {
+                return linkScale(d.list.length) + "px";
+              });
+
+            link.exit().style("stroke", "yellow")
+              .transition().duration(800)
+              .style("opacity", 0)
+              .remove();
+
+            var node = svg.selectAll(".node")
+              .data($scope.graph.getNodes(), function (d) { return d.id; });
+
+            node.enter()
+              .append("g")
+              .attr("class", "node")
+              .each(function (d) {
+
+                d3.select(this).append("circle")
+                  .attr("r", 10)
+                  .style("fill", function (d) {
+                    return colors(d.vid)
+                  });
+
+                d3.select(this).append("text")
+                  .attr("text-anchor", "middle")
+                  .text(d.name || d.id)
+              })
+              .on("mouseover", function (d) {
+                link.attr("class", function (link) {
+                  var source = link.nodes[0].id;
+                  var target = link.nodes[2].id;
+                  if (source === d.id || target === d.id) {
+                    return "bilink active";
+                  } else {
+                    return "bilink";
+                  }
+                });
+              })
+              .call(force.drag);
+
+            node.exit().select("circle").transition().duration(1000)
+              .attr("fill", "white")
+              .attr("cx", 1000)
+              .attr("cy", 1000)
+              .remove();
+
+            node.exit().select("text").remove();
+
+            force.on('tick', function () {
+
+              link.attr("d", function (d) {
+                var nodes = d.nodes;
+                return "M" + nodes[0].x + "," + nodes[0].y
+                     + "S" + nodes[1].x + "," + nodes[1].y
+                     + " " + nodes[2].x + "," + nodes[2].y;
+              });
+
+              node
+                .attr("transform", function (d) {
+                  return "translate(" + d.x + "," + d.y + ")";
+                })
+            });
+          };
+        }
+        return {link: link}
+      }]);
+    </script>
+  </body>
+</html>
