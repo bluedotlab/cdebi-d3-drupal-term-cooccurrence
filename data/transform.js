@@ -46,7 +46,7 @@ Promise.all(tables).then(function(tables) {
   data.node_data = tables[4];
   data.hierarchy = tables[5];
 
-  fs.writeFile('data/bluedot.json', JSON.stringify(data), function(err) {
+  fs.writeFile('data/term-cooccur.json', JSON.stringify(data), function(err) {
     if(err) { 
       console.log(err); 
     } else {
